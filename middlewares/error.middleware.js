@@ -1,4 +1,4 @@
-const errorMiddleware = () => {
+const errorMiddleware = (err, req, res, next) => {
   try {
     let error = {... err};
 
@@ -29,7 +29,7 @@ const errorMiddleware = () => {
     error.statusCode = 400
     }
 
-    res.send(error.statusCode || 500).json({sucess: false , error: error.message || 'Server Error'});
+    res.status(error.statusCode || 500).json({success: false , error: error.message || 'Server Error'});
   } catch (error) {
     next(error)
   }
