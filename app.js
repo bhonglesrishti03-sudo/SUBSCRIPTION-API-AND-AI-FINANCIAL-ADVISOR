@@ -11,6 +11,7 @@ import connectDB from './database/index.js';
 import errorMiddleware from './middlewares/error.middleware.js';
 import cookieParser from 'cookie-parser';
 import cors from "cors"
+import arcjetMiddleware from './middlewares/arcjet.middleware.js';
 
 
 
@@ -19,13 +20,14 @@ const app = express(); // returns an Express Application object
 app.use(cors({
     origin: process.env.CORS_ORIGIN,
     credentials: true
-}))
+}));
 
 //security practices
-app.use(express.json({limit: "16kb"}))
-app.use(express.urlencoded({extended: true, limit: "16kb"}))
-app.use(express.static("public"))
-app.use(cookieParser())
+app.use(express.json({limit: "16kb"}));
+app.use(express.urlencoded({extended: true, limit: "16kb"}));
+app.use(express.static("public"));
+app.use(cookieParser());
+app.use(arcjetMiddleware);
 
 
 //app.use is generally used with middlewares but we also use them when we need to use a route
@@ -43,8 +45,8 @@ app.get('/' , (req , res) => {
 app.listen(process.env.PORT, async() => {
   console.log('Subscription Tracker API is running on http://localhost:3000');
 
-  await connectDB()
-}) // by just creating our first route our server will not listen so we have to make our server listen
+  await connectDB();
+});// by just creating our first route our server will not listen so we have to make our server listen
 // for request trying to access specific routes.
 
 export default app; // by this other files can access app
