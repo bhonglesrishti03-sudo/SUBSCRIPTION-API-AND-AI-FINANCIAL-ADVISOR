@@ -1,5 +1,8 @@
-import { Subscription } from "../models/subscriptions.model.js"
-console.log("Inside createSubscription");
+// @ts-nocheck
+
+import { Subscription } from "../models/subscriptions.model.js";
+import { workflowClient } from "../config/upstash.js";
+import { SERVER_URL } from "../config/env.js";
 
 export const getSubscriptions = async (req, res, next) => {
     try {
@@ -43,6 +46,19 @@ try {
     ...req.body,
     user: req.user._id
   }) ;
+
+    const result = await workflowClient.trigger({
+  url: `${SERVER_URL}/api/v1/workflows/subscription/reminder`,
+  body: {
+    subscriptionId: subscription._id.toString(),
+  },
+  headers: {
+    "content-type": "application/json",
+  },
+  retries: 0,
+});
+
+console.log(result);
 
   res.status(201).json({success: true , data : subscription});
 } catch (error) {
