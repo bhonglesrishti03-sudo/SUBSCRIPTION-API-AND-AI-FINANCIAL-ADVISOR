@@ -4,7 +4,7 @@ const subscriptionSchema = new mongoose.Schema({
 name: {
     type: String,
     required: [true , 'Subscription name is required'],
-    trime: true,
+    trim: true,
     minLength: 2,
     maxLength: 100
 },
@@ -71,7 +71,7 @@ startDate: {
  required: true,
  validate: {
     validator: (value) => (value) <= new Date(),
-    message: 'Start date must be in the past'
+    message: 'Renewal date must be after the start date'
  }
 },
 renewalDate: {
@@ -94,7 +94,7 @@ user: {
 
 //Auto calculate the renewal date is missing
 //Whenever a new subscription is saved, automatically calculate the renewal date if the user hasn't provided one.
-subscriptionSchema.pre('save' , function(next){
+subscriptionSchema.pre('save' , function(){
 if(!this.renewalDate){
     const renewalPeriods = {
         daily: 1 ,
@@ -109,11 +109,11 @@ if(!this.renewalDate){
 if(this.renewalDate < new Date()){
     this.status = 'expired';
 }
-next();
+
 });
 
 
-const Subscription = mongoose.model('Subscription' , subscriptionSchema);
+export const Subscription = mongoose.model('Subscription' , subscriptionSchema);
 //the example flow of the above data
 /*
 {

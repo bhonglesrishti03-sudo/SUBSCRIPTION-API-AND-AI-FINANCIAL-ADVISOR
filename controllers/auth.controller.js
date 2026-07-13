@@ -4,84 +4,121 @@ import jwt from 'jsonwebtoken';
 import User from "../models/user.model.js";
 import { JWT_SECRET, JWT_EXPIRES_IN } from "../config/env.js";
 
-export const signUp = async(req , res , next) => {
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
+export const signUp = async (req, res, next) => {
     try {
-    const {name , email , password} = req.body;
+        const { name, email, password } = req.body;
 
-    //Check if the user already exists
-    const existingUser = await User.findOne({email});
+        if (!name || !email || !password) {
+            const error = new Error("All fields are required");
+            error.statusCode = 400;
+            throw error;
+        }
 
-    if(existingUser){
-        const error = new Error('User already exists');
-        error.statusCode = 409;
-        throw error;
-    }
+        const normalizedEmail = email.trim().toLowerCase();
 
-    //hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password , salt);
+        const existingUser = await User.findOne({
+            email: normalizedEmail
+        });
 
-    const newUsers = await User.create([{name , email , password: hashedPassword}], {session});
+        if (existingUser) {
+            const error = new Error("User already exists");
+            error.statusCode = 409;
+            throw error;
+        }
 
-    const token = jwt.sign({userId: newUsers[0]._id} , JWT_SECRET , {expiresIn: JWT_EXPIRES_IN});
-        
-    await session.commitTransaction(); 
-    session.endSession(); // Good practice
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        const user = await User.create({
+            name: name.trim(),
+            email: normalizedEmail,
+            password: hashedPassword
+        });
+
+        const token = jwt.sign(
+            { userId: user._id },
+            JWT_SECRET,
+            { expiresIn: JWT_EXPIRES_IN }
+        );
+
+        const userResponse = user.toObject();
+        delete userResponse.password;
 
         res.status(201).json({
             success: true,
             message: "User registered successfully",
             data: {
-                token,
-                 user
+                user: userResponse,
+                token
             }
-        });   
+        });
+
     } catch (error) {
-        await session.abortTransaction();
-        session.endSession();
         next(error);
     }
+};
+
+export const signIn = async (req, res, next) => {
+    try {
+
+        const { email, password } = req.body;
+
+    if (!email || !password) {
+    const error = new Error("Email and password are required");
+    error.statusCode = 400;
+    throw error;
 }
 
-export const signIn = async(req , res , next) => {
-try {
-    const {email , password} = req.body;
+        const user = await User.findOne({ email }).select("+password");
 
-    const user = await User.findOne({email});
-
-    if(!user){
-        const error = new Error('User not found')
-    }
-
-    const isPassword = await bcrypt.compare(password , user.password);
-
-    if(!isPassword){
-        const error = new Error('Invalid password');
-        error.statusCode = 401;
-        throw error;
-    }
-
-    const token = jwt.sign({userId : user._id} , JWT_SECRET , {expiresIn : JWT_EXPIRES_IN});
-
-    res.status(200).json({
-        success: true,
-        message : "User signed in successfully",
-        data: {
-            token , 
-            user
+        if (!user) {
+            const error = new Error("Invalid email or password");
+            error.statusCode = 401;
+            throw error;
         }
-    });
-} catch (error) {
-    next(error)
-}
-}
 
-export const signOut = async(req , res , next) => {
-    
-}
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+
+        if (!isPasswordValid) {
+            const error = new Error("Invalid email or password");
+            error.statusCode = 401;
+            throw error;
+        }
+
+        const token = jwt.sign(
+            { userId: user._id },
+            JWT_SECRET,
+            { expiresIn: JWT_EXPIRES_IN }
+        );
+
+        const userResponse = user.toObject();
+        delete userResponse.password;
+
+        res.status(200).json({
+            success: true,
+            message: "User signed in successfully",
+            data: {
+                token,
+                user: userResponse
+            }
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const signOut = async (req, res, next) => {
+    try {
+        res.status(200).json({
+            success: true,
+            message: "Logged out successfully"
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 
 /*
 User clicks Sign Up
