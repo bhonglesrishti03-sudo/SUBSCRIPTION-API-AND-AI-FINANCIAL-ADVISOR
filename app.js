@@ -6,11 +6,11 @@ import express from 'express';
 import {PORT} from './config/env.js'
 // express default export is actually a function
 
-console.log({
-  token: process.env.QSTASH_TOKEN ? "exists" : "missing",
-  current: process.env.QSTASH_CURRENT_SIGNING_KEY ? "exists" : "missing",
-  next: process.env.QSTASH_NEXT_SIGNING_KEY ? "exists" : "missing",
-});
+// console.log({
+//   token: process.env.QSTASH_TOKEN ? "exists" : "missing",
+//   current: process.env.QSTASH_CURRENT_SIGNING_KEY ? "exists" : "missing",
+//   next: process.env.QSTASH_NEXT_SIGNING_KEY ? "exists" : "missing",
+// });
 
 
 import userRouter from './routes/user.routes.js';
@@ -45,6 +45,7 @@ app.use('/api/v1/auth' , authRouter);
 app.use('/api/v1/users' , userRouter);
 app.use('/api/v1/subscriptions' , subscriptionRouter);
 app.use('/api/v1/workflows' , workflowRouter);
+
 
 app.use(errorMiddleware);
 

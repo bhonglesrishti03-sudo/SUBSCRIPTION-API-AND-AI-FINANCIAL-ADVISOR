@@ -1,6 +1,7 @@
 import {createRequire} from 'module';
 import { Subscription } from '../models/subscriptions.model.js';
 import dayjs from 'dayjs';
+import { sendReminderEmail } from '../utils/send-email.js';
 const require = createRequire(import.meta.url);
 const {serve} = require('@upstash/workflow/express')
 
@@ -37,7 +38,8 @@ for (const daysBefore of REMINDERS) {
 
         await triggerReminder(
             context,
-            `Reminder ${daysBefore} days before`
+            `${daysBefore} days before reminder`,
+            subscription
         );
     }
 }
@@ -56,12 +58,32 @@ const sleepUntilReminder = async(context , label , date) => {
     await context.sleepUntil(label , date.toDate());
 }
 
-const triggerReminder = async(context , label) => {
-return await context.run(label , () => {
-console.log(`Triggering ${label} reminder`)
-})
+const triggerReminder = async (context, label, subscriptionId) => {
+  return await context.run(label, async () => {
+    console.log(`Triggering ${label}`);
+
+    const subscription = await Subscription.findById(subscriptionId).populate(
+      "user",
+      "name email"
+    );
+
+    if (!subscription || subscription.status !== "active") {
+      console.log("Subscription no longer active.");
+      return;
+    }
+
+    if (!subscription.user) {
+    console.log("User not found.");
+    return;
 }
 
+    await sendReminderEmail({
+      to: subscription.user.email,
+      type: label,
+      subscription,
+    });
+  });
+};
 /*
 Flow:
 
