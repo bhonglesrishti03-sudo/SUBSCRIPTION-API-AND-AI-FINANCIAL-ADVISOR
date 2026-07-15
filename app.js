@@ -22,6 +22,10 @@ import cookieParser from 'cookie-parser';
 import cors from "cors"
 import arcjetMiddleware from './middlewares/arcjet.middleware.js';
 import workflowRouter from './routes/workflow.routes.js';
+import dashboardRoutes from "./routes/dashboard.routes.js";
+import advisorRoutes from "./routes/advisor.routes.js";
+
+
 
 
 
@@ -46,7 +50,8 @@ app.use('/api/v1/users' , userRouter);
 app.use('/api/v1/subscriptions' , subscriptionRouter);
 app.use('/api/v1/workflows' , workflowRouter);
 
-
+app.use("/api/v1/dashboard", dashboardRoutes);
+app.use("/api/v1/advisor", advisorRoutes);
 app.use(errorMiddleware);
 
 app.get('/' , (req , res) => {

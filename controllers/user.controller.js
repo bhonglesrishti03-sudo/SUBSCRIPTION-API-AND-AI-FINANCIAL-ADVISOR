@@ -91,6 +91,7 @@ export const deleteUser = async (req, res, next) => {
     }
 };
 
+
 /*
 // req.params  -> Route parameters
 // Example: /users/:id
