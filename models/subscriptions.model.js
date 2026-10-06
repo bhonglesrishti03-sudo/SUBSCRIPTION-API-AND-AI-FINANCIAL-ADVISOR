@@ -19,16 +19,7 @@ const subscriptionSchema = new mongoose.Schema(
     currency: {
       type: String,
       enum: {
-        values: [
-          "INR",
-          "USD",
-          "EUR",
-          "GBP",
-          "JPY",
-          "AUD",
-          "CAD",
-          "SGD",
-        ],
+        values: ["INR", "USD", "EUR", "GBP", "JPY", "AUD", "CAD", "SGD"],
         message: "{VALUE} is not a supported currency.",
       },
       default: "INR",
@@ -51,7 +42,7 @@ const subscriptionSchema = new mongoose.Schema(
         "Education",
         "Productivity",
         "Gaming",
-        "Health",
+        "Health & Fitness",
         "Shopping",
         "Finance",
         "Software",
@@ -90,14 +81,32 @@ const subscriptionSchema = new mongoose.Schema(
 
       validate: {
         validator: function (value) {
-          const selected = new Date(value);
-          const today = new Date();
+          const selectedDate = new Date(value);
 
-          selected.setHours(0, 0, 0, 0);
-          today.setHours(0, 0, 0, 0);
+          // Convert selected date to YYYY-MM-DD using UTC
+          // because HTML date inputs send YYYY-MM-DD.
+          const selectedYear = selectedDate.getUTCFullYear();
+          const selectedMonth = String(
+            selectedDate.getUTCMonth() + 1
+          ).padStart(2, "0");
+          const selectedDay = String(
+            selectedDate.getUTCDate()
+          ).padStart(2, "0");
+
+          const selected = `${selectedYear}-${selectedMonth}-${selectedDay}`;
+
+          // Get today's local calendar date
+          const now = new Date();
+
+          const todayYear = now.getFullYear();
+          const todayMonth = String(now.getMonth() + 1).padStart(2, "0");
+          const todayDay = String(now.getDate()).padStart(2, "0");
+
+          const today = `${todayYear}-${todayMonth}-${todayDay}`;
 
           return selected <= today;
         },
+
         message: "Start date cannot be in the future",
       },
     },
@@ -132,12 +141,11 @@ subscriptionSchema.pre("save", function () {
     this.renewalDate = new Date(this.startDate);
 
     this.renewalDate.setDate(
-      this.renewalDate.getDate() +
-        renewalPeriods[this.frequency]
+      this.renewalDate.getDate() + renewalPeriods[this.frequency]
     );
   }
 
-  // Expire subscription if renewal date has passed
+  // Mark subscription as expired if renewal date has already passed
   if (this.renewalDate < new Date()) {
     this.status = "expired";
   }

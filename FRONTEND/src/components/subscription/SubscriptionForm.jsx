@@ -37,7 +37,7 @@ const categories = [
   "Education",
   "Gaming",
   "Cloud Storage",
-  "Health",
+  "Health & Fitness",
   "Finance",
   "Other",
 ];
