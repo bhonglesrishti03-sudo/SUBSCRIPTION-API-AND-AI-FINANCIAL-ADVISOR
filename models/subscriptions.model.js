@@ -75,41 +75,36 @@ const subscriptionSchema = new mongoose.Schema(
       default: "active",
     },
 
-    startDate: {
-      type: Date,
-      required: true,
+   startDate: {
+  type: Date,
+  required: true,
 
-      validate: {
-        validator: function (value) {
-          const selectedDate = new Date(value);
+  validate: {
+    validator: function (value) {
+      const selectedDate = new Date(value);
 
-          // Convert selected date to YYYY-MM-DD using UTC
-          // because HTML date inputs send YYYY-MM-DD.
-          const selectedYear = selectedDate.getUTCFullYear();
-          const selectedMonth = String(
-            selectedDate.getUTCMonth() + 1
-          ).padStart(2, "0");
-          const selectedDay = String(
-            selectedDate.getUTCDate()
-          ).padStart(2, "0");
+      // Get today's date specifically in India (IST)
+      const indiaDate = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Kolkata",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(new Date());
 
-          const selected = `${selectedYear}-${selectedMonth}-${selectedDay}`;
+      // Convert selected date to YYYY-MM-DD
+      const selectedDateString = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Kolkata",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(selectedDate);
 
-          // Get today's local calendar date
-          const now = new Date();
-
-          const todayYear = now.getFullYear();
-          const todayMonth = String(now.getMonth() + 1).padStart(2, "0");
-          const todayDay = String(now.getDate()).padStart(2, "0");
-
-          const today = `${todayYear}-${todayMonth}-${todayDay}`;
-
-          return selected <= today;
-        },
-
-        message: "Start date cannot be in the future",
-      },
+      return selectedDateString <= indiaDate;
     },
+
+    message: "Start date cannot be in the future",
+  },
+},
 
     renewalDate: {
       type: Date,
