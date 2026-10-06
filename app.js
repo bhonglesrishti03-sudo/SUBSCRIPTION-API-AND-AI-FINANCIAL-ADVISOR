@@ -54,17 +54,15 @@ app.use("/api/v1/dashboard", dashboardRoutes);
 app.use("/api/v1/advisor", advisorRoutes);
 app.use(errorMiddleware);
 
-app.get('/' , (req , res) => {
-    res.send('Welcome to the Subscription Tracker API!');
+app.get('/', (req, res) => {
+  res.send('Welcome to the Subscription Tracker API!');
+});
 
-}); // first route
-
-app.listen(process.env.PORT, async() => {
-  console.log('Subscription Tracker API is running on http://localhost:4000');
+app.listen(PORT, async () => {
+  console.log(`Subscription Tracker API is running on port ${PORT}`);
 
   await connectDB();
-});// by just creating our first route our server will not listen so we have to make our server listen
-// for request trying to access specific routes.
+});
 
-export default app; // by this other files can access app
+export default app;
 
