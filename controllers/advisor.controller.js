@@ -1,3 +1,4 @@
+import { analyzeSubscriptions } from "../utils/financial-analysis.js";
 import { Subscription } from "../models/subscriptions.model.js";
 import { generateFinancialAdvice } from "../services/ai.service.js";
 
@@ -15,84 +16,55 @@ export const getFinancialAdvice = async (req, res, next) => {
       });
     }
 
-    const monthlySpending = subscriptions.reduce((sum, sub) => {
-  let monthlyPrice = sub.price;
+    const analysis = analyzeSubscriptions(subscriptions);
 
-  switch (sub.frequency) {
-    case "daily":
-      monthlyPrice = sub.price * 30;
-      break;
+    const prompt = `
+You are an AI subscription spending advisor.
 
-    case "weekly":
-      monthlyPrice = sub.price * 4;
-      break;
+Analyze the VERIFIED subscription data provided by the backend.
 
-    case "monthly":
-      monthlyPrice = sub.price;
-      break;
+IMPORTANT RULES:
 
-    case "yearly":
-      monthlyPrice = sub.price / 12;
-      break;
+1. Only use the subscription data provided below.
+2. Never invent subscriptions, prices, dates, categories, savings, or user behavior.
+3. The financial calculations were already performed by the backend.
+4. Do not recalculate or modify backend-generated numerical values.
+5. Recommendations must be directly supported by the provided data.
+6. Clearly distinguish observations from recommendations.
+7. If the data is insufficient for a recommendation, say so.
+8. Do not provide investment, tax, loan, or regulated financial advice.
+9. Keep recommendations practical and actionable.
+10. Return ONLY valid JSON.
 
-    default:
-      monthlyPrice = sub.price;
-  }
+VERIFIED SUBSCRIPTION ANALYSIS:
 
-  return sum + monthlyPrice;
-}, 0);
-    const subscriptionDetails = subscriptions
-      .map(
-        (sub) => `
-Name: ${sub.name}
-Price: ${sub.price} ${sub.currency}
-Category: ${sub.category}
-Frequency: ${sub.frequency}
-Status: ${sub.status}
-Renewal Date: ${new Date(sub.renewalDate).toDateString()}
-`
-      )
-      .join("\n-------------------------\n");
+${JSON.stringify(analysis, null, 2)}
 
-  const prompt = `
-You are a professional AI Financial Advisor.
+Return exactly this structure:
 
-Analyze the user's subscription portfolio and provide practical financial insights.
-
-Estimated Monthly Spending:
-₹${monthlySpending.toFixed(2)}
-
-Subscriptions:
-${subscriptionDetails}
-
-Provide your response in the following format:
-
-## Financial Health Score
-Give a score out of 10 with one sentence explaining it.
-
-## Spending Summary
-- Total monthly spending
-- Number of subscriptions
-- Most expensive subscription
-- Least expensive subscription
-
-## Savings Opportunities
-Identify subscriptions that appear unnecessary, duplicate, inactive, or expensive.
-Estimate how much the user could save.
-
-## Renewal Alerts
-Mention subscriptions renewing soon or those that deserve attention.
-
-## Recommendations
-Provide 4-6 actionable recommendations for reducing recurring expenses and managing subscriptions better.
-
-Rules:
-- Keep the response under 250 words.
-- Use Markdown headings and bullet points.
-- Be concise and friendly.
-- Do not invent subscriptions that are not provided.
-- Base every recommendation only on the supplied subscription data.
+{
+  "summary": "Short overview of the user's subscription spending",
+  "insights": [
+    {
+      "type": "spending|renewal|category|duplicate|saving",
+      "title": "Short title",
+      "description": "Evidence-based explanation"
+    }
+  ],
+  "recommendations": [
+    {
+      "subscription": "Exact subscription name from the provided data",
+      "action": "keep|review|cancel|downgrade",
+      "reason": "Evidence-based reason",
+      "estimatedMonthlySaving": 0
+    }
+  ],
+  "limitations": [
+    "Important limitation of this analysis"
+  ]
+}
 `;
+
     const advice = await generateFinancialAdvice(prompt);
 
     res.status(200).json({

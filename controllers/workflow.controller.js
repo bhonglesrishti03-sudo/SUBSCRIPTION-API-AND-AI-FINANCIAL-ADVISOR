@@ -39,7 +39,7 @@ for (const daysBefore of REMINDERS) {
         await triggerReminder(
             context,
             `${daysBefore} days before reminder`,
-            subscription
+            subscriptionId
         );
     }
 }

@@ -19,7 +19,7 @@ function getGreeting() {
   return "Good Evening";
 }
 
-export default function WelcomeHero() {
+export default function WelcomeHero({ dashboard }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const firstName = user?.name?.split(" ")[0] || "Sri";
@@ -112,8 +112,8 @@ export default function WelcomeHero() {
         flexWrap="wrap"
       >
         <Chip
-          icon={<TrendingUpRoundedIcon />}
-          label="12 Active Plans"
+  icon={<TrendingUpRoundedIcon />}
+  label={`${dashboard.stats?.activeSubscriptions ?? 0} Active Plans`}
           sx={{
             bgcolor: "rgba(255,255,255,.18)",
             color: "#fff",
@@ -123,15 +123,17 @@ export default function WelcomeHero() {
         />
 
         <Chip
-          icon={<AutoAwesomeRoundedIcon />}
-          label="₹620 Saved"
-          sx={{
-            bgcolor: "rgba(255,255,255,.18)",
-            color: "#fff",
-            fontWeight: 600,
-            backdropFilter: "blur(10px)",
-          }}
-        />
+  icon={<AutoAwesomeRoundedIcon />}
+  label={`₹${Number(
+    dashboard.stats?.monthlySpending ?? 0
+  ).toFixed(0)} Monthly Spend`}
+  sx={{
+    bgcolor: "rgba(255,255,255,.18)",
+    color: "#fff",
+    fontWeight: 600,
+    backdropFilter: "blur(10px)",
+  }}
+/>
       </Stack>
 
       <Button

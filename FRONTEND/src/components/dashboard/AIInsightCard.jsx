@@ -1,20 +1,31 @@
 import {
   Box,
-  Typography,
   Button,
   Chip,
+  Typography,
 } from "@mui/material";
 
 import AutoAwesomeRoundedIcon from "@mui/icons-material/AutoAwesomeRounded";
-import TrendingUpRoundedIcon from "@mui/icons-material/TrendingUpRounded";
 import NotificationsActiveRoundedIcon from "@mui/icons-material/NotificationsActiveRounded";
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
+import TrendingUpRoundedIcon from "@mui/icons-material/TrendingUpRounded";
+import PaymentsRoundedIcon from "@mui/icons-material/PaymentsRounded";
 
 import { tokens } from "../../theme";
 import { useNavigate } from "react-router-dom";
 
-export default function AIInsightCard() {
+export default function AIInsightCard({ dashboard }) {
   const navigate = useNavigate();
+
+  const activeSubscriptions =
+    dashboard?.stats?.activeSubscriptions ?? 0;
+
+  const monthlySpending =
+    Number(dashboard?.stats?.monthlySpending ?? 0);
+
+  const upcomingRenewals =
+    dashboard?.stats?.upcomingRenewals ?? 0;
+
   return (
     <Box
       sx={{
@@ -24,8 +35,10 @@ export default function AIInsightCard() {
         p: 3.5,
         position: "relative",
         overflow: "hidden",
+
         background:
           "linear-gradient(180deg,#1e293b 0%,#111827 100%)",
+
         border: "1px solid rgba(255,255,255,.08)",
         backdropFilter: "blur(20px)",
       }}
@@ -44,6 +57,7 @@ export default function AIInsightCard() {
         }}
       />
 
+      {/* Header */}
       <Chip
         icon={<AutoAwesomeRoundedIcon />}
         label="AI Advisor"
@@ -74,10 +88,11 @@ export default function AIInsightCard() {
           mb: 3,
         }}
       >
-        AI analyzed your subscriptions and found a few opportunities to reduce
-        your monthly spending.
+        Get personalized insights based on your actual
+        subscription spending and upcoming renewals.
       </Typography>
 
+      {/* Dynamic Insights */}
       <Box
         sx={{
           display: "flex",
@@ -86,43 +101,88 @@ export default function AIInsightCard() {
           mb: 4,
         }}
       >
-        <Box sx={{ display: "flex", gap: 2 }}>
+        {/* Active subscriptions */}
+        <Box
+          sx={{
+            display: "flex",
+            gap: 2,
+            alignItems: "flex-start",
+          }}
+        >
           <TrendingUpRoundedIcon
             sx={{
               color: "#22c55e",
+              mt: 0.2,
             }}
           />
 
-          <Typography color={tokens.textPrimary}>
-            You spent <b>18%</b> less than last month.
+          <Typography
+            sx={{
+              color: tokens.textPrimary,
+              lineHeight: 1.5,
+            }}
+          >
+            You currently have{" "}
+            <b>{activeSubscriptions}</b>{" "}
+            active subscriptions.
           </Typography>
         </Box>
 
-        <Box sx={{ display: "flex", gap: 2 }}>
-          <NotificationsActiveRoundedIcon
+        {/* Monthly spending */}
+        <Box
+          sx={{
+            display: "flex",
+            gap: 2,
+            alignItems: "flex-start",
+          }}
+        >
+          <PaymentsRoundedIcon
             sx={{
               color: "#f59e0b",
+              mt: 0.2,
             }}
           />
 
-          <Typography color={tokens.textPrimary}>
-            Netflix renews tomorrow.
+          <Typography
+            sx={{
+              color: tokens.textPrimary,
+              lineHeight: 1.5,
+            }}
+          >
+            Your monthly subscription spending is{" "}
+            <b>₹{monthlySpending.toFixed(0)}</b>.
           </Typography>
         </Box>
 
-        <Box sx={{ display: "flex", gap: 2 }}>
+        {/* Upcoming renewals */}
+        <Box
+          sx={{
+            display: "flex",
+            gap: 2,
+            alignItems: "flex-start",
+          }}
+        >
           <NotificationsActiveRoundedIcon
             sx={{
               color: "#3b82f6",
+              mt: 0.2,
             }}
           />
 
-          <Typography color={tokens.textPrimary}>
-            Spotify renews in 3 days.
+          <Typography
+            sx={{
+              color: tokens.textPrimary,
+              lineHeight: 1.5,
+            }}
+          >
+            You have{" "}
+            <b>{upcomingRenewals}</b>{" "}
+            upcoming renewals.
           </Typography>
         </Box>
       </Box>
 
+      {/* AI Advisor Button */}
       <Button
         fullWidth
         endIcon={<ArrowForwardRoundedIcon />}
@@ -132,8 +192,10 @@ export default function AIInsightCard() {
           borderRadius: "14px",
           textTransform: "none",
           fontWeight: 700,
+
           background:
             "linear-gradient(90deg,#3b82f6,#2563eb)",
+
           color: "#fff",
 
           "&:hover": {

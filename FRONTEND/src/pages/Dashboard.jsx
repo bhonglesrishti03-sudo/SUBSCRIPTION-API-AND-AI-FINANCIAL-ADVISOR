@@ -75,8 +75,8 @@ const navigate = useNavigate();
           mb: 3,
         }}
       >
-        <WelcomeHero />
-        <AIInsightCard dashboard={dashboard} />
+        <WelcomeHero dashboard={dashboard} />
+<AIInsightCard dashboard={dashboard} />
       </Box>
 
       {/* Stat Cards */}

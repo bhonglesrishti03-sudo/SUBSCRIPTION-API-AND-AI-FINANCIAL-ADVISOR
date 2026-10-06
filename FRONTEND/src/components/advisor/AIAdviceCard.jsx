@@ -1,4 +1,5 @@
 import { useState } from "react";
+
 import {
   Box,
   Typography,
@@ -10,14 +11,16 @@ import {
   Snackbar,
   Alert,
   Chip,
+  Divider,
 } from "@mui/material";
 
 import SmartToyRoundedIcon from "@mui/icons-material/SmartToyRounded";
 import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
 import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
 import AccessTimeRoundedIcon from "@mui/icons-material/AccessTimeRounded";
-
-import ReactMarkdown from "react-markdown";
+import TrendingUpRoundedIcon from "@mui/icons-material/TrendingUpRounded";
+import SavingsRoundedIcon from "@mui/icons-material/SavingsRounded";
+import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
 
 import { glassCard } from "../../theme/glass";
 
@@ -32,7 +35,25 @@ export default function AIAdviceCard({
   const handleCopy = async () => {
     if (!advice) return;
 
-    await navigator.clipboard.writeText(advice);
+    const textToCopy = [
+      advice.summary || "",
+
+      ...(advice.insights || []).map(
+        (item) =>
+          `${item.title}: ${item.description}`
+      ),
+
+      ...(advice.recommendations || []).map(
+        (item) =>
+          `${item.subscription} - ${item.action}: ${item.reason} (Estimated monthly saving: ₹${item.estimatedMonthlySaving || 0})`
+      ),
+
+      ...(advice.limitations || []).map(
+        (item) => `Limitation: ${item}`
+      ),
+    ].join("\n\n");
+
+    await navigator.clipboard.writeText(textToCopy);
     setOpen(true);
   };
 
@@ -172,57 +193,272 @@ export default function AIAdviceCard({
           </Alert>
         )}
 
-        {/* Advice */}
+        {/* AI Advice */}
 
-        {!loading && !error && (
-          <>
+        {!loading && !error && advice && (
+          <Box>
+            {/* Summary */}
+
             <Box
               sx={{
-                lineHeight: 1.9,
-
-                "& h1": {
-                  mt: 3,
-                  mb: 2,
-                  fontSize: 30,
-                  fontWeight: 800,
-                },
-
-                "& h2": {
-                  mt: 3,
-                  mb: 2,
-                  fontSize: 24,
-                  fontWeight: 700,
-                },
-
-                "& h3": {
-                  mt: 2,
-                  mb: 1,
-                  fontSize: 20,
-                  fontWeight: 700,
-                },
-
-                "& p": {
-                  color: "#d1d5db",
-                  mb: 2,
-                },
-
-                "& ul": {
-                  paddingLeft: "22px",
-                },
-
-                "& li": {
-                  marginBottom: "10px",
-                },
-
-                "& strong": {
-                  color: "#fff",
-                },
+                p: 3,
+                borderRadius: "18px",
+                background:
+                  "rgba(59,130,246,.08)",
+                border:
+                  "1px solid rgba(59,130,246,.15)",
+                mb: 4,
               }}
             >
-              <ReactMarkdown>
-                {advice}
-              </ReactMarkdown>
+              <Stack
+                direction="row"
+                spacing={1.5}
+                alignItems="center"
+                mb={1.5}
+              >
+                <SmartToyRoundedIcon
+                  sx={{
+                    color: "#60a5fa",
+                  }}
+                />
+
+                <Typography
+                  variant="h6"
+                  fontWeight={700}
+                >
+                  Spending Summary
+                </Typography>
+              </Stack>
+
+              <Typography
+                color="text.secondary"
+                lineHeight={1.8}
+              >
+                {advice.summary ||
+                  "No summary was generated."}
+              </Typography>
             </Box>
+
+            {/* Insights */}
+
+            {advice.insights?.length > 0 && (
+              <Box mb={4}>
+                <Typography
+                  variant="h6"
+                  fontWeight={700}
+                  mb={2}
+                >
+                  Key Insights
+                </Typography>
+
+                <Stack spacing={2}>
+                  {advice.insights.map(
+                    (insight, index) => (
+                      <Box
+                        key={index}
+                        sx={{
+                          p: 2.5,
+                          borderRadius: "16px",
+                          background:
+                            "rgba(255,255,255,.04)",
+                          border:
+                            "1px solid rgba(255,255,255,.07)",
+                        }}
+                      >
+                        <Stack
+                          direction="row"
+                          spacing={1.5}
+                          alignItems="flex-start"
+                        >
+                          <TrendingUpRoundedIcon
+                            sx={{
+                              color: "#22c55e",
+                              mt: 0.3,
+                            }}
+                          />
+
+                          <Box>
+                            <Typography
+                              fontWeight={700}
+                              mb={0.5}
+                            >
+                              {insight.title}
+                            </Typography>
+
+                            <Typography
+                              color="text.secondary"
+                              lineHeight={1.7}
+                            >
+                              {insight.description}
+                            </Typography>
+
+                            {insight.type && (
+                              <Chip
+                                label={insight.type}
+                                size="small"
+                                sx={{
+                                  mt: 1.5,
+                                  textTransform:
+                                    "capitalize",
+                                }}
+                              />
+                            )}
+                          </Box>
+                        </Stack>
+                      </Box>
+                    )
+                  )}
+                </Stack>
+              </Box>
+            )}
+
+            {/* Recommendations */}
+
+            {advice.recommendations?.length > 0 && (
+              <Box mb={4}>
+                <Typography
+                  variant="h6"
+                  fontWeight={700}
+                  mb={2}
+                >
+                  Recommendations
+                </Typography>
+
+                <Stack spacing={2}>
+                  {advice.recommendations.map(
+                    (recommendation, index) => (
+                      <Box
+                        key={index}
+                        sx={{
+                          p: 2.5,
+                          borderRadius: "16px",
+                          background:
+                            "rgba(34,197,94,.06)",
+                          border:
+                            "1px solid rgba(34,197,94,.12)",
+                        }}
+                      >
+                        <Stack
+                          direction="row"
+                          spacing={1.5}
+                          alignItems="flex-start"
+                        >
+                          <SavingsRoundedIcon
+                            sx={{
+                              color: "#22c55e",
+                              mt: 0.3,
+                            }}
+                          />
+
+                          <Box sx={{ flex: 1 }}>
+                            <Stack
+                              direction="row"
+                              justifyContent="space-between"
+                              alignItems="center"
+                              gap={2}
+                              flexWrap="wrap"
+                            >
+                              <Typography
+                                fontWeight={700}
+                              >
+                                {recommendation.subscription}
+                              </Typography>
+
+                              <Chip
+                                label={
+                                  recommendation.action
+                                }
+                                size="small"
+                                color={
+                                  recommendation.action ===
+                                  "cancel"
+                                    ? "error"
+                                    : recommendation.action ===
+                                      "downgrade"
+                                    ? "warning"
+                                    : "primary"
+                                }
+                                sx={{
+                                  textTransform:
+                                    "capitalize",
+                                }}
+                              />
+                            </Stack>
+
+                            <Typography
+                              color="text.secondary"
+                              lineHeight={1.7}
+                              mt={1}
+                            >
+                              {recommendation.reason}
+                            </Typography>
+
+                            <Typography
+                              sx={{
+                                mt: 1.5,
+                                color: "#22c55e",
+                                fontWeight: 700,
+                              }}
+                            >
+                              Estimated monthly saving: ₹
+                              {Number(
+                                recommendation.estimatedMonthlySaving ||
+                                  0
+                              ).toFixed(0)}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      </Box>
+                    )
+                  )}
+                </Stack>
+              </Box>
+            )}
+
+            {/* Limitations */}
+
+            {advice.limitations?.length > 0 && (
+              <Box mb={3}>
+                <Divider sx={{ mb: 3 }} />
+
+                <Stack
+                  direction="row"
+                  spacing={1.5}
+                  alignItems="flex-start"
+                >
+                  <WarningAmberRoundedIcon
+                    sx={{
+                      color: "#f59e0b",
+                      mt: 0.2,
+                    }}
+                  />
+
+                  <Box>
+                    <Typography
+                      fontWeight={700}
+                      mb={1}
+                    >
+                      Analysis Limitations
+                    </Typography>
+
+                    {advice.limitations.map(
+                      (limitation, index) => (
+                        <Typography
+                          key={index}
+                          color="text.secondary"
+                          fontSize={14}
+                          lineHeight={1.7}
+                        >
+                          • {limitation}
+                        </Typography>
+                      )
+                    )}
+                  </Box>
+                </Stack>
+              </Box>
+            )}
+
+            {/* Generated Time */}
 
             <Stack
               direction="row"
@@ -245,17 +481,16 @@ export default function AIAdviceCard({
                 {new Date().toLocaleString()}
               </Typography>
             </Stack>
-          </>
+          </Box>
         )}
 
-        {/* Button */}
+        {/* Generate Button */}
 
         {!loading && (
           <Button
             fullWidth
             variant="contained"
             size="large"
-            disabled={loading}
             startIcon={<RefreshRoundedIcon />}
             onClick={onRefresh}
             sx={{
