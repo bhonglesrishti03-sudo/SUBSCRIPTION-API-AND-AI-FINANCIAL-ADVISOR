@@ -8,43 +8,50 @@ const {serve} = require('@upstash/workflow/express')
 const REMINDERS = [7,5,2,1];
 
 
-export const sendReminders = serve(async(context) => {
-const {subscriptionId} = context.requestPayload;
-const subscription = await fetchSubscription(context , subscriptionId);
+export const sendReminders = serve(
+  async (context) => {
+    const { subscriptionId } = context.requestPayload;
 
+    const subscription = await fetchSubscription(
+      context,
+      subscriptionId
+    );
 
-if(!subscription || subscription.status !== "active"){
-    return;
-}
+    if (!subscription || subscription.status !== "active") {
+      return;
+    }
 
-const renewalDate = dayjs(subscription.renewalDate);
+    const renewalDate = dayjs(subscription.renewalDate);
 
+    if (renewalDate.isBefore(dayjs())) {
+      console.log(
+        `Renewal date has passed for subscription ${subscriptionId}. Stopping workflow`
+      );
+      return;
+    }
 
-if(renewalDate.isBefore(dayjs())){
-    console.log(`Renewal date has passed for subscription ${subscriptionId}. Stopping workflow`);
-    return;
-}
+    for (const daysBefore of REMINDERS) {
+      const reminderDate = renewalDate.subtract(daysBefore, "day");
 
-
-for (const daysBefore of REMINDERS) {
-    const reminderDate = renewalDate.subtract(daysBefore, 'day');
-
-    if (reminderDate.isAfter(dayjs())) {
+      if (reminderDate.isAfter(dayjs())) {
         await sleepUntilReminder(
-            context,
-            `Reminder ${daysBefore} days before`,
-            reminderDate
+          context,
+          `Reminder ${daysBefore} days before`,
+          reminderDate
         );
 
         await triggerReminder(
-            context,
-            `${daysBefore} days before reminder`,
-            subscriptionId
+          context,
+          `${daysBefore} days before reminder`,
+          subscriptionId
         );
+      }
     }
-}
-
-});
+  },
+  {
+    baseUrl: "https://subscription-api-and-ai-financial-advisor.onrender.com",
+  }
+);
 
 const fetchSubscription = async (context , subscriptionId) =>{
 return await context.run('get subscription' , async() => {
