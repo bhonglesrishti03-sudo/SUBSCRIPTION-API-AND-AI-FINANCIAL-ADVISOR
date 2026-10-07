@@ -1,12 +1,18 @@
-import {createRequire} from 'module';
-import { Subscription } from '../models/subscriptions.model.js';
-import dayjs from 'dayjs';
-import { sendReminderEmail } from '../utils/send-email.js';
+import { createRequire } from "module";
+import { Subscription } from "../models/subscriptions.model.js";
+import dayjs from "dayjs";
+import { sendReminderEmail } from "../utils/send-email.js";
+import { workflowClient } from "../config/upstash.js";
+
 const require = createRequire(import.meta.url);
-const {serve} = require('@upstash/workflow/express')
+const { serve } = require("@upstash/workflow/express");
 
-const REMINDERS = [7,5,2,1];
+const REMINDERS = [7, 5, 2, 1];
 
+const WORKFLOW_URL =
+  "https://subscription-api-and-ai-financial-advisor.onrender.com/api/v1/workflows/subscription/reminder";
+
+const MAX_DELAY_DAYS = 6;
 
 export const sendReminders = serve(
   async (context) => {
@@ -18,61 +24,145 @@ export const sendReminders = serve(
     );
 
     if (!subscription || subscription.status !== "active") {
+      console.log("Subscription not found or inactive.");
       return;
     }
 
     const renewalDate = dayjs(subscription.renewalDate);
+    const now = dayjs();
 
-    if (renewalDate.isBefore(dayjs())) {
+    if (renewalDate.isBefore(now)) {
       console.log(
         `Renewal date has passed for subscription ${subscriptionId}. Stopping workflow`
       );
       return;
     }
 
-    for (const daysBefore of REMINDERS) {
-      const reminderDate = renewalDate.subtract(daysBefore, "day");
+    /*
+     * Find the earliest reminder that is still in the future.
+     */
+    const nextReminder = REMINDERS
+      .map((daysBefore) => ({
+        daysBefore,
+        reminderDate: renewalDate.subtract(daysBefore, "day"),
+      }))
+      .filter(({ reminderDate }) => reminderDate.isAfter(now))
+      .sort(
+        (a, b) =>
+          a.reminderDate.valueOf() - b.reminderDate.valueOf()
+      )[0];
 
-      if (reminderDate.isAfter(dayjs())) {
-        await sleepUntilReminder(
-          context,
-          `Reminder ${daysBefore} days before`,
-          reminderDate
-        );
-
-        await triggerReminder(
-          context,
-          `${daysBefore} days before reminder`,
-          subscriptionId
-        );
-      }
+    /*
+     * No future reminders remain.
+     */
+    if (!nextReminder) {
+      console.log(
+        `No upcoming reminders remain for subscription ${subscriptionId}.`
+      );
+      return;
     }
+
+    const { daysBefore, reminderDate } = nextReminder;
+
+    /*
+     * If the next reminder is more than 6 days away,
+     * create another workflow run 6 days from now.
+     *
+     * We use 6 instead of 7 to stay safely below
+     * Upstash's 7-day maximum delay.
+     */
+    const secondsUntilReminder = reminderDate.diff(now, "second");
+    const maxAllowedSeconds =
+      MAX_DELAY_DAYS * 24 * 60 * 60;
+
+    if (secondsUntilReminder > maxAllowedSeconds) {
+      console.log(
+        `Next reminder (${daysBefore} days before) is ` +
+          `${Math.ceil(secondsUntilReminder / 86400)} days away. ` +
+          `Scheduling workflow recheck in ${MAX_DELAY_DAYS} days.`
+      );
+
+      await workflowClient.trigger({
+        url: WORKFLOW_URL,
+        body: {
+          subscriptionId,
+        },
+        delay: `${MAX_DELAY_DAYS}d`,
+        retries: 0,
+      });
+
+      return;
+    }
+
+    /*
+     * The reminder is now within Upstash's allowed
+     * 7-day sleep window.
+     */
+    await sleepUntilReminder(
+      context,
+      `Reminder ${daysBefore} days before`,
+      reminderDate
+    );
+
+    await triggerReminder(
+      context,
+      `${daysBefore} days before reminder`,
+      subscriptionId
+    );
+
+    /*
+     * After sending this reminder, create another workflow
+     * run immediately to schedule the next reminder.
+     */
+    await workflowClient.trigger({
+      url: WORKFLOW_URL,
+      body: {
+        subscriptionId,
+      },
+      retries: 0,
+    });
   },
   {
-    baseUrl: "https://subscription-api-and-ai-financial-advisor.onrender.com",
+    baseUrl:
+      "https://subscription-api-and-ai-financial-advisor.onrender.com",
   }
 );
 
-const fetchSubscription = async (context , subscriptionId) =>{
-return await context.run('get subscription' , async() => {
-    return Subscription.findById(subscriptionId).populate('user' , 'name email')
-})
-}
-
-
-const sleepUntilReminder = async(context , label , date) => {
-    console.log(`Sleeping until ${label} reminder at ${date}`);
-    await context.sleepUntil(label , date.toDate());
-}
-
-const triggerReminder = async (context, label, subscriptionId) => {
-  return await context.run(label, async () => {
-    console.log(`Triggering ${label}`);
-
-    const subscription = await Subscription.findById(subscriptionId).populate(
+const fetchSubscription = async (context, subscriptionId) => {
+  return await context.run("get subscription", async () => {
+    return Subscription.findById(subscriptionId).populate(
       "user",
       "name email"
     );
+  });
+};
+
+const sleepUntilReminder = async (
+  context,
+  label,
+  date
+) => {
+  console.log(
+    `Sleeping until ${label} reminder at ${date.toISOString()}`
+  );
+
+  await context.sleepUntil(
+    label,
+    date.toDate()
+  );
+};
+
+const triggerReminder = async (
+  context,
+  label,
+  subscriptionId
+) => {
+  return await context.run(label, async () => {
+    console.log(`Triggering ${label}`);
+
+    const subscription = await Subscription.findById(
+      subscriptionId
+    ).populate("user", "name email");
 
     if (!subscription || subscription.status !== "active") {
       console.log("Subscription no longer active.");
@@ -80,15 +170,19 @@ const triggerReminder = async (context, label, subscriptionId) => {
     }
 
     if (!subscription.user) {
-    console.log("User not found.");
-    return;
-}
+      console.log("User not found.");
+      return;
+    }
 
     await sendReminderEmail({
       to: subscription.user.email,
       type: label,
       subscription,
     });
+
+    console.log(
+      `Reminder email sent for ${subscription.name}`
+    );
   });
 };
 /*
